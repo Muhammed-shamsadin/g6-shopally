@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  /* Font styles */
+  --font-inter: var(--font-inter), sans-serif;
+  --font-poppins: var(--font-poppins), sans-serif;
+
+  /* Color styles */
+  --color-brand-white: #ffffff;
+  --color-brand-yellow: #ffd300;
+  --color-brand-gray: #757b81;
+  --color-brand-darkGray: #262b32;
+  --color-brand-dark: #090c11;
+}
+@layer base {
+  body {
+    @apply font-inter bg-brand-white;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-poppins;
+  }
+}
