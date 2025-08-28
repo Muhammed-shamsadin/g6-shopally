@@ -6,11 +6,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/shopally-ai/internal/adapter/handler"
-
 	"github.com/shopally-ai/internal/adapter/gateway"
-
+	"github.com/shopally-ai/internal/adapter/handler"
+	httpRouter "github.com/shopally-ai/internal/adapter/http/router"
 	"github.com/shopally-ai/internal/config"
 	"github.com/shopally-ai/internal/platform"
 	"github.com/shopally-ai/pkg/usecase"
@@ -51,19 +49,19 @@ func main() {
 		log.Println("✅ Redis connected")
 	}
 
-	// Initialize router
-	router := gin.Default()
-
-	// Construct mock gateways and use case for mocked search flow
-	ag := gateway.NewMockAlibabaGateway()
+	// Construct gateways and use case. Use the dev Alibaba HTTP gateway which
+	// currently returns mapped products from a mock AliExpress JSON. Swap this
+	// to a real HTTP implementation when ready.
+	ag := gateway.NewAlibabaHTTPGateway()
 	lg := gateway.NewMockLLMGateway()
 	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
 
-	// Initialize handlers
-	searchHandler := handler.NewSearchHandler(uc)
+	// Initialize handlers (inject usecase so the router can register the
+	// handler function without receiving a handler instance).
+	handler.InjectSearchUseCase(uc)
 
-	// Register routes
-	searchHandler.RegisterRoutes(router)
+	// Initialize router with centralized route registration
+	router := httpRouter.SetupRouter(cfg)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)
