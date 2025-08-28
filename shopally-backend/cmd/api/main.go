@@ -6,7 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/shopally-ai/cmd/api/middleware"
+	"github.com/shopally-ai/cmd/api/router"
 	"github.com/shopally-ai/internal/adapter/handler"
 
 	"github.com/shopally-ai/internal/adapter/gateway"
@@ -34,7 +35,6 @@ func main() {
 		}
 	}()
 	db := client.Database(cfg.Mongo.Database)
-
 	fmt.Printf("Connected to MongoDB database: %s\n", db.Name())
 
 	// Initialize Redis client
@@ -51,8 +51,14 @@ func main() {
 		log.Println("✅ Redis connected")
 	}
 
+	limiter := middleware.NewRateLimiter(
+		cfg.Redis.Host+":"+cfg.Redis.Port,
+		cfg.RateLimit.Limit,
+		time.Duration(cfg.RateLimit.Window)*time.Second,
+	)
+
 	// Initialize router
-	router := gin.Default()
+	router := router.SetupRouter(cfg, limiter)
 
 	// Construct mock gateways and use case for mocked search flow
 	ag := gateway.NewMockAlibabaGateway()
