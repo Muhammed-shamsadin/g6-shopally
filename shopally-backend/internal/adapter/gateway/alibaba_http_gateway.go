@@ -104,9 +104,7 @@ func parsePercentOrZero(s string) float64 {
 	if s == "" {
 		return 0
 	}
-	if strings.HasSuffix(s, "%") {
-		s = strings.TrimSuffix(s, "%")
-	}
+	s = strings.TrimSuffix(s, "%")
 	return parseFloatOrZero(s)
 }
 
