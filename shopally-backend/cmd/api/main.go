@@ -6,9 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/shopally-ai/cmd/api/middleware"
+	"github.com/shopally-ai/cmd/api/router"
 	"github.com/shopally-ai/internal/adapter/gateway"
 	"github.com/shopally-ai/internal/adapter/handler"
-	httpRouter "github.com/shopally-ai/internal/adapter/http/router"
 	"github.com/shopally-ai/internal/config"
 	"github.com/shopally-ai/internal/platform"
 	"github.com/shopally-ai/pkg/usecase"
@@ -32,7 +33,6 @@ func main() {
 		}
 	}()
 	db := client.Database(cfg.Mongo.Database)
-
 	fmt.Printf("Connected to MongoDB database: %s\n", db.Name())
 
 	// Initialize Redis client
@@ -49,19 +49,24 @@ func main() {
 		log.Println("✅ Redis connected")
 	}
 
-	// Construct gateways and use case. Use the dev Alibaba HTTP gateway which
-	// currently returns mapped products from a mock AliExpress JSON. Swap this
-	// to a real HTTP implementation when ready.
+	limiter := middleware.NewRateLimiter(
+		cfg.Redis.Host+":"+cfg.Redis.Port,
+		cfg.RateLimit.Limit,
+		time.Duration(cfg.RateLimit.Window)*time.Second,
+	)
+
+	// Initialize router
+	router := router.SetupRouter(cfg, limiter)
+
+	// Construct mock gateways and use case for mocked search flow
 	ag := gateway.NewAlibabaHTTPGateway()
+	// ag := gateway.NewMockAlibabaGateway()
 	lg := gateway.NewMockLLMGateway()
 	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
 
 	// Initialize handlers (inject usecase so the router can register the
 	// handler function without receiving a handler instance).
 	handler.InjectSearchUseCase(uc)
-
-	// Initialize router with centralized route registration
-	router := httpRouter.SetupRouter(cfg)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)

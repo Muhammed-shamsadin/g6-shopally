@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/shopally-ai/pkg/domain"
-	"github.com/shopally-ai/pkg/usecase"
 )
 
 // MapAliExpressResponseToProducts transforms the raw AliExpress API response JSON
@@ -118,7 +117,7 @@ type AlibabaHTTPGateway struct {
 
 // NewAlibabaHTTPGateway returns an implementation of usecase.AlibabaGateway
 // suitable for development (returns mock mapped products).
-func NewAlibabaHTTPGateway() usecase.AlibabaGateway {
+func NewAlibabaHTTPGateway() domain.AlibabaGateway {
 	return &AlibabaHTTPGateway{}
 }
 
