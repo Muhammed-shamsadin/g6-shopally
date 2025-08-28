@@ -21,7 +21,7 @@ func SetupRouter(cfg *config.Config, limiter *middleware.RateLimiter) *gin.Engin
 	//public
 	version1.GET("/search", handler.SearchFunc())
 
-	// private	
+	// private
 	limitedRouter := version1.Group("")
 	limitedRouter.Use(limiter.Middleware())
 	{
