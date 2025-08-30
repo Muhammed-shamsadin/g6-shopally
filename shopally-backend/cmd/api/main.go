@@ -8,10 +8,8 @@ import (
 
 	"github.com/shopally-ai/cmd/api/middleware"
 	"github.com/shopally-ai/cmd/api/router"
-	"github.com/shopally-ai/internal/adapter/handler"
-
 	"github.com/shopally-ai/internal/adapter/gateway"
-
+	"github.com/shopally-ai/internal/adapter/handler"
 	"github.com/shopally-ai/internal/config"
 	"github.com/shopally-ai/internal/platform"
 	"github.com/shopally-ai/pkg/usecase"
@@ -61,15 +59,14 @@ func main() {
 	router := router.SetupRouter(cfg, limiter)
 
 	// Construct mock gateways and use case for mocked search flow
-	ag := gateway.NewMockAlibabaGateway()
+	ag := gateway.NewAlibabaHTTPGateway()
+	// ag := gateway.NewMockAlibabaGateway()
 	lg := gateway.NewMockLLMGateway()
 	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
 
-	// Initialize handlers
-	searchHandler := handler.NewSearchHandler(uc)
-
-	// Register routes
-	searchHandler.RegisterRoutes(router)
+	// Initialize handlers (inject usecase so the router can register the
+	// handler function without receiving a handler instance).
+	handler.InjectSearchUseCase(uc)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)
