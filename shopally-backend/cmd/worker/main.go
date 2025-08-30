@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 	"os"
+	"time"
 
 	"github.com/shopally-ai/internal/adapter/gateway"
 	"github.com/shopally-ai/internal/config"
