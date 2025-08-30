@@ -16,11 +16,13 @@ on:
   push:
     branches:
       - main
+      - backend.main
     paths:
       - 'shopally-backend/**'
   pull_request:
     branches:
       - main
+      - backend.main
     paths:
       - 'shopally-backend/**'
 

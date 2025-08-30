@@ -7,11 +7,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/shopally-ai/internal/adapter/handler"
-
+	"github.com/shopally-ai/cmd/api/middleware"
+	"github.com/shopally-ai/cmd/api/router"
 	"github.com/shopally-ai/internal/adapter/gateway"
-
+	"github.com/shopally-ai/internal/adapter/handler"
 	"github.com/shopally-ai/internal/config"
 	"github.com/shopally-ai/internal/platform"
 	"github.com/shopally-ai/pkg/domain"
@@ -36,7 +35,6 @@ func main() {
 		}
 	}()
 	db := client.Database(cfg.Mongo.Database)
-
 	fmt.Printf("Connected to MongoDB database: %s\n", db.Name())
 
 	// Initialize Redis client
@@ -53,11 +51,20 @@ func main() {
 		log.Println("✅ Redis connected")
 	}
 
-	// Initialize router
-	router := gin.Default()
-
+	limiter := middleware.NewRateLimiter(
+		cfg.Redis.Host+":"+cfg.Redis.Port,
+		cfg.RateLimit.Limit,
+		time.Duration(cfg.RateLimit.Window)*time.Second,
+	)
 	// Construct gateways and use case
 	ag := gateway.NewMockAlibabaGateway()
+	lg := gateway.NewGeminiLLMGateway("", nil)
+
+	searchHandler := handler.NewSearchHandler(usecase.NewSearchProductsUseCase(ag, lg, nil))
+
+	// Initialize router
+	router := router.SetupRouter(cfg, limiter, searchHandler)
+
 	// FX client (provider defaults to exchangerate.host if not configured)
 	fxInner := gateway.NewFXHTTPGateway("", "", nil)
 	var fxClient domain.IFXClient = fxInner
@@ -66,7 +73,7 @@ func main() {
 		redisCache := gateway.NewRedisCache(rdb.Client, "sa:")
 		fxClient = gateway.NewCachedFXClient(fxInner, redisCache, 12*time.Hour)
 	}
-	var lg domain.LLMGateway
+
 	if os.Getenv("GEMINI_API_KEY") != "" {
 		lg = gateway.NewGeminiLLMGateway("", fxClient)
 		log.Println("LLM: using Gemini gateway")
@@ -74,13 +81,6 @@ func main() {
 		lg = gateway.NewMockLLMGateway()
 		log.Println("LLM: using Mock gateway (no GEMINI_API_KEY)")
 	}
-	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
-
-	// Initialize handlers
-	searchHandler := handler.NewSearchHandler(uc)
-
-	// Register routes
-	searchHandler.RegisterRoutes(router)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)

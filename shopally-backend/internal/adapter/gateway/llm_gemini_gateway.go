@@ -25,6 +25,11 @@ type GeminiLLMGateway struct {
 	fx       domain.IFXClient
 }
 
+// CompareProducts implements domain.LLMGateway.
+func (g *GeminiLLMGateway) CompareProducts(ctx context.Context, productDetails []*domain.Product) (map[string]interface{}, error) {
+	panic("unimplemented")
+}
+
 // NewGeminiLLMGateway creates a new gateway using the GEMINI_API_KEY from env if apiKey is empty.
 func NewGeminiLLMGateway(apiKey string, fx domain.IFXClient) domain.LLMGateway {
 	if apiKey == "" {

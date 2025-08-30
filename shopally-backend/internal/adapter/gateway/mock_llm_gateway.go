@@ -9,6 +9,11 @@ import (
 // MockLLMGateway implements domain.LLMGateway and returns a hardcoded parsed intent.
 type MockLLMGateway struct{}
 
+// CompareProducts implements domain.LLMGateway.
+func (m *MockLLMGateway) CompareProducts(ctx context.Context, productDetails []*domain.Product) (map[string]interface{}, error) {
+	panic("unimplemented")
+}
+
 func NewMockLLMGateway() domain.LLMGateway {
 	return &MockLLMGateway{}
 }
