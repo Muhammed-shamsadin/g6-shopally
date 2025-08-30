@@ -58,8 +58,8 @@ func main() {
 	// Initialize router
 	router := router.SetupRouter(cfg, limiter)
 
-	// Construct mock gateways and use case for mocked search flow
-	ag := gateway.NewAlibabaHTTPGateway()
+	// Construct gateways and use case for search flow
+	ag := gateway.NewAlibabaHTTPGateway(cfg)
 	// ag := gateway.NewMockAlibabaGateway()
 	lg := gateway.NewMockLLMGateway()
 	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
