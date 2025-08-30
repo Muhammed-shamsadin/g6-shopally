@@ -28,6 +28,10 @@ func SetupRouter(cfg *config.Config, limiter *middleware.RateLimiter) *gin.Engin
 		limitedRouter.GET("/limited", func(c *gin.Context) {
 			c.JSON(http.StatusOK, domain.Response{Data: map[string]interface{}{"message": "limited message"}})
 		})
+		limitedRouter.POST("compare", func(c *gin.Context) {
+			c.JSON(http.StatusOK, domain.Response{Data: map[string]interface{}{"message": "limited message"}})
+		})
+
 	}
 	return router
 }
