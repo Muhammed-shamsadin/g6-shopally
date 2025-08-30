@@ -38,7 +38,3 @@ type AlertRepository interface {
 	GetAlert(alertID string) (*Alert, error)
 	DeleteAlert(alertID string) error
 }
-
-type IPushNotificationGateway interface {
-	Send(ctx context.Context, token, title, body string, data map[string]string) (string, error)
-}
