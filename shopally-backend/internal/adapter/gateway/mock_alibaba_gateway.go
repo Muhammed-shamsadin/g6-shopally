@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/shopally-ai/pkg/domain"
-	"github.com/shopally-ai/pkg/usecase"
 )
 
 // MockAlibabaGateway implements usecase.AlibabaGateway and returns hardcoded products.
 type MockAlibabaGateway struct{}
 
-func NewMockAlibabaGateway() usecase.AlibabaGateway {
+func NewMockAlibabaGateway() domain.AlibabaGateway {
 	return &MockAlibabaGateway{}
 }
 
@@ -28,7 +27,10 @@ func (m *MockAlibabaGateway) FetchProducts(ctx context.Context, query string, fi
 			ProductRating:     4.6,
 			SellerScore:       95,
 			DeliveryEstimate:  "15-30 days",
-			SummaryBullets:    []string{"This is a mock summary bullet."},
+			Description:       "High quality smartphone suitable for everyday use.",
+			CustomerHighlights: "Good camera, solid battery life",
+			CustomerReview:    "Customers praise its durability and battery.",
+			NumberSold:        1200,
 			DeeplinkURL:       "#",
 		},
 		{
@@ -40,7 +42,10 @@ func (m *MockAlibabaGateway) FetchProducts(ctx context.Context, query string, fi
 			ProductRating:     4.4,
 			SellerScore:       90,
 			DeliveryEstimate:  "12-25 days",
-			SummaryBullets:    []string{"Good battery life"},
+			Description:       "Affordable smartphone with essential features.",
+			CustomerHighlights: "Long battery life",
+			CustomerReview:    "Great value for the price.",
+			NumberSold:        2450,
 			DeeplinkURL:       "#",
 		},
 		{
@@ -52,7 +57,10 @@ func (m *MockAlibabaGateway) FetchProducts(ctx context.Context, query string, fi
 			ProductRating:     4.7,
 			SellerScore:       93,
 			DeliveryEstimate:  "10-20 days",
-			SummaryBullets:    []string{"Fast charging"},
+			Description:       "Balanced performance and features for most users.",
+			CustomerHighlights: "Fast charging",
+			CustomerReview:    "Users like the smooth performance.",
+			NumberSold:        1780,
 			DeeplinkURL:       "#",
 		},
 		{
@@ -64,7 +72,10 @@ func (m *MockAlibabaGateway) FetchProducts(ctx context.Context, query string, fi
 			ProductRating:     4.9,
 			SellerScore:       98,
 			DeliveryEstimate:  "7-15 days",
-			SummaryBullets:    []string{"High refresh rate display"},
+			Description:       "Premium device with high-end features.",
+			CustomerHighlights: "High refresh rate display",
+			CustomerReview:    "Top-notch screen and performance.",
+			NumberSold:        950,
 			DeeplinkURL:       "#",
 		},
 		{
@@ -76,7 +87,10 @@ func (m *MockAlibabaGateway) FetchProducts(ctx context.Context, query string, fi
 			ProductRating:     4.2,
 			SellerScore:       85,
 			DeliveryEstimate:  "10-18 days",
-			SummaryBullets:    []string{"Budget friendly"},
+			Description:       "Budget-friendly accessory kit for phones.",
+			CustomerHighlights: "Budget friendly",
+			CustomerReview:    "Great for everyday needs.",
+			NumberSold:        5200,
 			DeeplinkURL:       "#",
 		},
 	}

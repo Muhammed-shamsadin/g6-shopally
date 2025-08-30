@@ -19,6 +19,10 @@ type Product struct {
 	ProductRating     float64  `json:"productRating"`
 	SellerScore       int      `json:"sellerScore"`
 	DeliveryEstimate  string   `json:"deliveryEstimate"`
+	Description       string   `json:"description"`
+	CustomerHighlights string  `json:"customerHighlights"`
+	CustomerReview    string   `json:"customerReview"`
+	NumberSold        int      `json:"numberSold"`
 	SummaryBullets    []string `json:"summaryBullets"`
 	DeeplinkURL       string   `json:"deeplinkUrl"`
 	TaxRate           float64  `json:"taxRate"`

@@ -3,13 +3,13 @@ package gateway
 import (
 	"context"
 
-	"github.com/shopally-ai/pkg/usecase"
+	"github.com/shopally-ai/pkg/domain"
 )
 
-// MockLLMGateway implements usecase.LLMGateway and returns a hardcoded parsed intent.
+// MockLLMGateway implements domain.LLMGateway and returns a hardcoded parsed intent.
 type MockLLMGateway struct{}
 
-func NewMockLLMGateway() usecase.LLMGateway {
+func NewMockLLMGateway() domain.LLMGateway {
 	return &MockLLMGateway{}
 }
 
@@ -19,4 +19,9 @@ func (m *MockLLMGateway) ParseIntent(ctx context.Context, query string) (map[str
 		"category":      "smartphone",
 		"price_max_ETB": 5000,
 	}, nil
+}
+
+// SummarizeProduct returns hardcoded bullets for mocks
+func (m *MockLLMGateway) SummarizeProduct(ctx context.Context, p *domain.Product) ([]string, error) {
+	return []string{"This is a mock summary bullet."}, nil
 }

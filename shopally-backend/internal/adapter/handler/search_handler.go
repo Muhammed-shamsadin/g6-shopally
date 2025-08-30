@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -35,7 +36,18 @@ func (h *SearchHandler) Search(c *gin.Context) {
 		return
 	}
 
-	data, err := h.uc.Search(c.Request.Context(), q)
+	// Optional language preference: am | en (default en)
+	lang := strings.ToLower(strings.TrimSpace(c.DefaultQuery("lang", "en")))
+	ctx := c.Request.Context()
+	if lang == "am" {
+		ctx = context.WithValue(ctx, "resp_lang", "am")
+		ctx = context.WithValue(ctx, "resp_currency", "ETB")
+	} else {
+		ctx = context.WithValue(ctx, "resp_lang", "en")
+		ctx = context.WithValue(ctx, "resp_currency", "USD")
+	}
+
+	data, err := h.uc.Search(ctx, q)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, envelope{Data: nil, Error: map[string]interface{}{
 			"code":    "INTERNAL_SERVER_ERROR",

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/shopally-ai/internal/config"
 	"github.com/shopally-ai/internal/platform"
+	"github.com/shopally-ai/pkg/domain"
 	"github.com/shopally-ai/pkg/usecase"
 )
 
@@ -54,9 +56,24 @@ func main() {
 	// Initialize router
 	router := gin.Default()
 
-	// Construct mock gateways and use case for mocked search flow
+	// Construct gateways and use case
 	ag := gateway.NewMockAlibabaGateway()
-	lg := gateway.NewMockLLMGateway()
+	// FX client (provider defaults to exchangerate.host if not configured)
+	fxInner := gateway.NewFXHTTPGateway("", "", nil)
+	var fxClient domain.IFXClient = fxInner
+	// Wrap with Redis cache if available
+	if rdb != nil {
+		redisCache := gateway.NewRedisCache(rdb.Client, "sa:")
+		fxClient = gateway.NewCachedFXClient(fxInner, redisCache, 12*time.Hour)
+	}
+	var lg domain.LLMGateway
+	if os.Getenv("GEMINI_API_KEY") != "" {
+		lg = gateway.NewGeminiLLMGateway("", fxClient)
+		log.Println("LLM: using Gemini gateway")
+	} else {
+		lg = gateway.NewMockLLMGateway()
+		log.Println("LLM: using Mock gateway (no GEMINI_API_KEY)")
+	}
 	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
 
 	// Initialize handlers
