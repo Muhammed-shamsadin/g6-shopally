@@ -14,6 +14,7 @@ type AlibabaGateway interface {
 // to parse user intent from a search query.
 type LLMGateway interface {
 	ParseIntent(ctx context.Context, query string) (map[string]interface{}, error)
+	CompareProducts(ctx context.Context, productDetails []*Product) (map[string]interface{}, error)
 }
 
 // CacheGateway defines the contract for a caching service.

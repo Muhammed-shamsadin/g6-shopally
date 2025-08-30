@@ -18,3 +18,5 @@ configs/
 .env
 
 doc.txt
+
+bin/*
