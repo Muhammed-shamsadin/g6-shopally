@@ -45,7 +45,6 @@ func main() {
 		warm()
 	}
 
-
 	ctx := context.Background()
 
 	fcm, err := gateway.NewFCMGateway(ctx, gateway.FCMGatewayConfig{})
