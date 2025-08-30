@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopally-ai/internal/contextkeys"
 	"github.com/shopally-ai/pkg/domain"
 )
 
@@ -84,7 +85,9 @@ func (g *GeminiLLMGateway) call(ctx context.Context, prompt string) (string, err
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", errors.New("gemini http status: " + resp.Status)
 	}
@@ -141,7 +144,7 @@ func (g *GeminiLLMGateway) ParseIntent(ctx context.Context, query string) (map[s
 	sb.WriteString("  category (string),\n  min_price (number|null),\n  max_price (number|null),\n  delivery_days_max (number|null),\n  ship_to (string),\n  currency (string),\n  language (string).\n")
 	sb.WriteString("Rules: ship_to must be 'Ethiopia'; currency must be 'USD'; language must be 'en'.\n")
 	if haveUSD {
-		sb.WriteString(fmt.Sprintf("Normalized hint: approx_budget_usd=%.2f.\n", approxUSD))
+		fmt.Fprintf(sb, "Normalized hint: approx_budget_usd=%.2f.\n", approxUSD)
 	}
 	sb.WriteString("User query (English-normalized if needed): \n")
 	sb.WriteString(normalized)
@@ -170,7 +173,7 @@ func (g *GeminiLLMGateway) ParseIntent(ctx context.Context, query string) (map[s
 
 // SummarizeProduct requests a single JSON string summary from provided product data.
 func (g *GeminiLLMGateway) SummarizeProduct(ctx context.Context, p *domain.Product) ([]string, error) {
-	lang, _ := ctx.Value("resp_lang").(string)
+	lang, _ := ctx.Value(contextkeys.RespLang).(string)
 	if lang == "" {
 		lang = "en"
 	}

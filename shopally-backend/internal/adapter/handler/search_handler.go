@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopally-ai/internal/contextkeys"
 	"github.com/shopally-ai/pkg/usecase"
 )
 
@@ -40,11 +41,11 @@ func (h *SearchHandler) Search(c *gin.Context) {
 	lang := strings.ToLower(strings.TrimSpace(c.DefaultQuery("lang", "en")))
 	ctx := c.Request.Context()
 	if lang == "am" {
-		ctx = context.WithValue(ctx, "resp_lang", "am")
-		ctx = context.WithValue(ctx, "resp_currency", "ETB")
+		ctx = context.WithValue(ctx, contextkeys.RespLang, "am")
+		ctx = context.WithValue(ctx, contextkeys.RespCurrency, "ETB")
 	} else {
-		ctx = context.WithValue(ctx, "resp_lang", "en")
-		ctx = context.WithValue(ctx, "resp_currency", "USD")
+		ctx = context.WithValue(ctx, contextkeys.RespLang, "en")
+		ctx = context.WithValue(ctx, contextkeys.RespCurrency, "USD")
 	}
 
 	data, err := h.uc.Search(ctx, q)

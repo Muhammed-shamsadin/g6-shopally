@@ -56,14 +56,6 @@ func main() {
 		cfg.RateLimit.Limit,
 		time.Duration(cfg.RateLimit.Window)*time.Second,
 	)
-	// Construct gateways and use case
-	ag := gateway.NewMockAlibabaGateway()
-	lg := gateway.NewGeminiLLMGateway("", nil)
-
-	searchHandler := handler.NewSearchHandler(usecase.NewSearchProductsUseCase(ag, lg, nil))
-
-	// Initialize router
-	router := router.SetupRouter(cfg, limiter, searchHandler)
 
 	// FX client (provider defaults to exchangerate.host if not configured)
 	fxInner := gateway.NewFXHTTPGateway("", "", nil)
@@ -74,6 +66,9 @@ func main() {
 		fxClient = gateway.NewCachedFXClient(fxInner, redisCache, 12*time.Hour)
 	}
 
+	// Construct gateways and use case (choose LLM once)
+	ag := gateway.NewMockAlibabaGateway()
+	var lg domain.LLMGateway
 	if os.Getenv("GEMINI_API_KEY") != "" {
 		lg = gateway.NewGeminiLLMGateway("", fxClient)
 		log.Println("LLM: using Gemini gateway")
@@ -81,6 +76,10 @@ func main() {
 		lg = gateway.NewMockLLMGateway()
 		log.Println("LLM: using Mock gateway (no GEMINI_API_KEY)")
 	}
+	searchHandler := handler.NewSearchHandler(usecase.NewSearchProductsUseCase(ag, lg, nil))
+
+	// Initialize router
+	router := router.SetupRouter(cfg, limiter, searchHandler)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)
