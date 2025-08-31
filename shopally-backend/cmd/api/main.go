@@ -66,8 +66,7 @@ func main() {
 		fxClient = gateway.NewCachedFXClient(fxInner, redisCache, 12*time.Hour)
 	}
 
-	// Construct gateways and use case (choose LLM once)
-	ag := gateway.NewMockAlibabaGateway()
+	// Choose LLM implementation
 	var lg domain.LLMGateway
 	if os.Getenv("GEMINI_API_KEY") != "" {
 		lg = gateway.NewGeminiLLMGateway("", fxClient)
@@ -76,7 +75,15 @@ func main() {
 		lg = gateway.NewMockLLMGateway()
 		log.Println("LLM: using Mock gateway (no GEMINI_API_KEY)")
 	}
-	searchHandler := handler.NewSearchHandler(usecase.NewSearchProductsUseCase(ag, lg, nil))
+
+	// Alibaba gateway: use HTTP gateway (real) and pass configuration
+	// If you want to force the mock gateway for local development, replace
+	// the following line with: ag := gateway.NewMockAlibabaGateway()
+	ag := gateway.NewAlibabaHTTPGateway(cfg)
+
+	// Construct usecase and handler
+	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
+	searchHandler := handler.NewSearchHandler(uc)
 
 	// Initialize router
 	router := router.SetupRouter(cfg, limiter, searchHandler)
