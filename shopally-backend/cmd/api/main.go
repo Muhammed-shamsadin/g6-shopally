@@ -11,6 +11,7 @@ import (
 	"github.com/shopally-ai/cmd/api/router"
 	"github.com/shopally-ai/internal/adapter/gateway"
 	"github.com/shopally-ai/internal/adapter/handler"
+	repo "github.com/shopally-ai/internal/adapter/repository"
 	"github.com/shopally-ai/internal/config"
 	"github.com/shopally-ai/internal/platform"
 	"github.com/shopally-ai/pkg/domain"
@@ -81,12 +82,22 @@ func main() {
 	// the following line with: ag := gateway.NewMockAlibabaGateway()
 	ag := gateway.NewAlibabaHTTPGateway(cfg)
 
-	// Construct usecase and handler
+	// Construct usecase and handler for search
 	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
 	searchHandler := handler.NewSearchHandler(uc)
 
+	// Alerts: set up Mongo repository and handler
+	collName := cfg.Mongo.AlertCollection
+	if collName == "" {
+		collName = "alerts"
+	}
+	alertsColl := db.Collection(collName)
+	alertRepo := repo.NewMongoAlertRepository(alertsColl)
+	alertMgr := usecase.NewAlertManager(alertRepo)
+	alertHandler := handler.NewAlertHandler(alertMgr)
+
 	// Initialize router
-	router := router.SetupRouter(cfg, limiter, searchHandler)
+	router := router.SetupRouter(cfg, limiter, searchHandler, alertHandler)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)
