@@ -33,10 +33,10 @@ func SetupRouter(cfg *config.Config, limiter *middleware.RateLimiter, searchHand
 		})
 		limitedRouter.GET("/search", searchHandler.Search)
 
-	// Alerts endpoints
-	limitedRouter.POST("/alerts", alertHandler.CreateAlertHandler)
-	limitedRouter.GET("/alerts/:id", alertHandler.GetAlertHandler)
-	limitedRouter.DELETE("/alerts/:id", alertHandler.DeleteAlertHandler)
+		// Alerts endpoints
+		limitedRouter.POST("/alerts", alertHandler.CreateAlertHandler)
+		limitedRouter.GET("/alerts/:id", alertHandler.GetAlertHandler)
+		limitedRouter.DELETE("/alerts/:id", alertHandler.DeleteAlertHandler)
 
 	}
 	return router
