@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"log"
 	"sort"
 	"strings"
 	"sync"
@@ -58,6 +59,8 @@ func (uc *SearchProductsUseCase) Search(ctx context.Context, query string) (inte
 
 	// Fetch products from the gateway
 	products, err := uc.alibabaGateway.FetchProducts(ctx, query, filters)
+
+	log.Println("SearchProductsUseCase: fetched", len(products), "products for query:", query, "with filters:", filters)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +77,8 @@ func (uc *SearchProductsUseCase) Search(ctx context.Context, query string) (inte
 			}
 		}
 	}
+
+	// Override currency, language and ship_to_country from context (if set)
 
 	// Parallel summarization: each product summary is independent.
 	if uc.llmGateway != nil {

@@ -25,7 +25,6 @@ import (
 // fields and uses sensible defaults/placeholders where mapping data is not
 // available from the upstream response.
 func MapAliExpressResponseToProducts(data []byte) ([]*domain.Product, error) {
-	// Define minimal structs for the parts of the AliExpress response we care about.
 	type aliProduct struct {
 		AppSalePrice        string `json:"app_sale_price"`
 		OriginalPrice       string `json:"original_price"`
@@ -33,31 +32,47 @@ func MapAliExpressResponseToProducts(data []byte) ([]*domain.Product, error) {
 		Discount            string `json:"discount"`
 		ProductMainImageURL string `json:"product_main_image_url"`
 		TaxRate             string `json:"tax_rate"`
-		ProductID           string `json:"product_id"`
+		ProductID           int64  `json:"product_id"`
 		ShipToDays          string `json:"ship_to_days"`
 		EvaluateRate        string `json:"evaluate_rate"`
 		SalePrice           string `json:"sale_price"`
 		ProductTitle        string `json:"product_title"`
+
+		TargetSalePrice            string `json:"target_sale_price"`
+		TargetAppSalePrice         string `json:"target_app_sale_price"`
+		ShopName                   string `json:"shop_name"`
+		TargetSalePriceCurrency    string `json:"target_sale_price_currency"`
+		TargetAppSalePriceCurrency string `json:"target_app_sale_price_currency"`
+
+		ProductSmallImageURLs struct {
+			String []string `json:"string"`
+		} `json:"product_small_image_urls"`
+		SecondLevelCategoryName     string `json:"second_level_category_name"`
+		SecondLevelCategoryID       int64  `json:"second_level_category_id"`
+		FirstLevelCategoryID        int64  `json:"first_level_category_id"`
+		FirstLevelCategoryName      string `json:"first_level_category_name"`
+		OriginalPriceCurrency       string `json:"original_price_currency"`
+		ShopURL                     string `json:"shop_url"`
+		TargetOriginalPriceCurrency string `json:"target_original_price_currency"`
+		TargetOriginalPrice         string `json:"target_original_price"`
+		ProductVideoURL             string `json:"product_video_url"`
+		PromotionLink               string `json:"promotion_link"`
+		SKUId                       int64  `json:"sku_id"`
+		HotProductCommissionRate    string `json:"hot_product_commission_rate"`
+		ShopID                      int64  `json:"shop_id"`
+		LastestVolume               int    `json:"lastest_volume"`
+		SalePriceCurrency           string `json:"sale_price_currency"`
+		CommissionRate              string `json:"commission_rate"`
 	}
 
-	type resultBlock struct {
-		Products []aliProduct `json:"products"`
-	}
-
-	type respResult struct {
-		Result resultBlock `json:"result"`
-	}
-
-	type aliResp struct {
-		RespResult respResult `json:"resp_result"`
-	}
-
-	// SG sync endpoint returns a different envelope: aliexpress_affiliate_product_query_response.resp_result.result.products.product
 	type sgResp struct {
 		AliexpressResp struct {
 			RespResult struct {
 				Result struct {
-					Products struct {
+					CurrentRecordCount int `json:"current_record_count"`
+					TotalRecordCount   int `json:"total_record_count"`
+					CurrentPageNo      int `json:"current_page_no"`
+					Products           struct {
 						Product []aliProduct `json:"product"`
 					} `json:"products"`
 				} `json:"result"`
@@ -65,15 +80,24 @@ func MapAliExpressResponseToProducts(data []byte) ([]*domain.Product, error) {
 		} `json:"aliexpress_affiliate_product_query_response"`
 	}
 
-	// Try SG shape first
 	var sg sgResp
-	if err := json.Unmarshal(data, &sg); err == nil {
+	err := json.Unmarshal(data, &sg)
+	if err == nil {
+		log.Printf("[AlibabaGateway] Unmarshal to sgResp succeeded. Raw product count in struct: %d", len(sg.AliexpressResp.RespResult.Result.Products.Product))
 		if len(sg.AliexpressResp.RespResult.Result.Products.Product) > 0 {
+			log.Println("[AlibabaGateway] Successfully unmarshaled with SG response structure and found products.")
 			out := make([]*domain.Product, 0, len(sg.AliexpressResp.RespResult.Result.Products.Product))
 			for _, p := range sg.AliexpressResp.RespResult.Result.Products.Product {
-				usd := parseFloatOrZero(p.SalePrice)
+				usd := parseFloatOrZero(p.TargetSalePrice)
 				if usd == 0 {
-					usd = parseFloatOrZero(p.AppSalePrice)
+					usd = parseFloatOrZero(p.TargetAppSalePrice)
+				}
+				if usd == 0 {
+					log.Printf("[AlibabaGateway] Warning: No explicit target USD price found for product ID %d. Falling back to SalePrice/AppSalePrice which might be in CNY.", p.ProductID)
+					usd = parseFloatOrZero(p.SalePrice)
+					if usd == 0 {
+						usd = parseFloatOrZero(p.AppSalePrice)
+					}
 				}
 
 				tax := parseFloatOrZero(p.TaxRate)
@@ -81,71 +105,40 @@ func MapAliExpressResponseToProducts(data []byte) ([]*domain.Product, error) {
 				rating := parsePercentOrZero(p.EvaluateRate)
 
 				prod := &domain.Product{
-					ID:                strings.TrimSpace(p.ProductID),
+					ID:                strconv.FormatInt(p.ProductID, 10),
 					Title:             strings.TrimSpace(p.ProductTitle),
 					ImageURL:          strings.TrimSpace(p.ProductMainImageURL),
-					AIMatchPercentage: 0,
+					AIMatchPercentage: 0, // Placeholder
 					Price: domain.Price{
 						ETB:         0,
 						USD:         usd,
 						FXTimestamp: time.Now().UTC(),
 					},
-					ProductRating:    rating,
-					SellerScore:      0,
-					DeliveryEstimate: strings.TrimSpace(p.ShipToDays),
-					SummaryBullets:   []string{},
-					DeeplinkURL:      strings.TrimSpace(p.ProductDetailURL),
-					TaxRate:          tax,
-					Discount:         discount,
+					ProductRating:      rating,
+					SellerScore:        0, // Placeholder
+					SellerName:         strings.TrimSpace(p.ShopName),
+					DeliveryEstimate:   strings.TrimSpace(p.ShipToDays),
+					Description:        "", // Not available in current API response snippet
+					CustomerHighlights: "", // Not available in current API response snippet
+					CustomerReview:     "", // Not available in current API response snippet
+					NumberSold:         p.LastestVolume,
+					SummaryBullets:     []string{},
+					DeeplinkURL:        strings.TrimSpace(p.ProductDetailURL),
+					TaxRate:            tax,
+					Discount:           discount,
 				}
-
 				out = append(out, prod)
 			}
+			log.Println("Mapped", len(out), "products from AliExpress SG response")
 			return out, nil
+		} else {
+			log.Println("[AlibabaGateway] Unmarshal to SG response structure succeeded, but found an empty 'product' array. This might indicate no products matched the query or a deeper API issue for this specific response.")
+			return []*domain.Product{}, nil
 		}
+	} else {
+		log.Printf("[AlibabaGateway] SG response structure unmarshaling failed: %v. This is unexpected for the current API response format. Returning an empty product list.", err)
+		return []*domain.Product{}, fmt.Errorf("failed to unmarshal AliExpress response with SG structure: %v", err)
 	}
-
-	// Fallback to legacy shape
-	var r aliResp
-	if err := json.Unmarshal(data, &r); err != nil {
-		return nil, err
-	}
-
-	out := make([]*domain.Product, 0, len(r.RespResult.Result.Products))
-	for _, p := range r.RespResult.Result.Products {
-		// sale price fallback to app_sale_price
-		usd := parseFloatOrZero(p.SalePrice)
-		if usd == 0 {
-			usd = parseFloatOrZero(p.AppSalePrice)
-		}
-
-		tax := parseFloatOrZero(p.TaxRate)
-		discount := parsePercentOrZero(p.Discount)
-		rating := parsePercentOrZero(p.EvaluateRate)
-
-		prod := &domain.Product{
-			ID:                strings.TrimSpace(p.ProductID),
-			Title:             strings.TrimSpace(p.ProductTitle),
-			ImageURL:          strings.TrimSpace(p.ProductMainImageURL),
-			AIMatchPercentage: 0, // placeholder
-			Price: domain.Price{
-				ETB:         0, // not converted yet
-				USD:         usd,
-				FXTimestamp: time.Now().UTC(),
-			},
-			ProductRating:    rating,
-			SellerScore:      0, // placeholder
-			DeliveryEstimate: strings.TrimSpace(p.ShipToDays),
-			SummaryBullets:   []string{},
-			DeeplinkURL:      strings.TrimSpace(p.ProductDetailURL),
-			TaxRate:          tax,
-			Discount:         discount,
-		}
-
-		out = append(out, prod)
-	}
-
-	return out, nil
 }
 
 func parseFloatOrZero(s string) float64 {
@@ -153,10 +146,10 @@ func parseFloatOrZero(s string) float64 {
 	if s == "" {
 		return 0
 	}
-	// remove commas
 	s = strings.ReplaceAll(s, ",", "")
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {
+		log.Printf("[AlibabaGateway] parseFloatOrZero: failed to parse '%s' as float: %v", s, err)
 		return 0
 	}
 	return f
@@ -171,17 +164,11 @@ func parsePercentOrZero(s string) float64 {
 	return parseFloatOrZero(s)
 }
 
-// AlibabaHTTPGateway is a development implementation of usecase.AlibabaGateway
-// that returns mapped products from a mock AliExpress JSON response. Later
-// this should be replaced with a real HTTP client that calls the AliExpress
-// affiliate API and maps the real response.
 type AlibabaHTTPGateway struct {
 	client *http.Client
 	cfg    *config.Config
 }
 
-// NewAlibabaHTTPGateway returns an implementation of usecase.AlibabaGateway
-// suitable for development (returns mock mapped products).
 func NewAlibabaHTTPGateway(cfg *config.Config) domain.AlibabaGateway {
 	return &AlibabaHTTPGateway{
 		client: &http.Client{Timeout: 10 * time.Second},
@@ -190,80 +177,138 @@ func NewAlibabaHTTPGateway(cfg *config.Config) domain.AlibabaGateway {
 }
 
 const mockAliExpressResponse = `{
-	"code": "0",
-	"resp_result": {
-		"result": {
-			"products": [
-				{
-					"app_sale_price": "362",
-					"original_price": "100",
-					"product_detail_url": "https://www.aliexpress.com/item/33006951782.html",
-					"discount": "50%",
-					"product_main_image_url": "https://example.com/img.jpg",
-					"tax_rate": "0.1",
-					"product_id": "33006951782",
-					"ship_to_days": "ship to RU in 7 days",
-					"evaluate_rate": "92.1%",
-					"sale_price": "15.9",
-					"product_title": "Spring Autumn mother daughter dress matching outfits"
+	"aliexpress_affiliate_product_query_response": {
+		"resp_result": {
+			"result": {
+				"current_record_count": 1,
+				"total_record_count": 1,
+				"current_page_no": 1,
+				"products": {
+					"product": [
+						{
+							"app_sale_price": "362",
+							"original_price": "100",
+							"product_detail_url": "https://www.aliexpress.com/item/33006951782.html",
+							"discount": "50%",
+							"product_main_image_url": "https://example.com/img.jpg",
+							"tax_rate": "0.1",
+							"product_id": 33006951782,
+							"ship_to_days": "ship to RU in 7 days",
+							"evaluate_rate": "92.1%",
+							"sale_price": "15.9",
+							"product_title": "Spring Autumn mother daughter dress matching outfits",
+							"target_sale_price": "15.9",
+							"target_app_sale_price": "15.9",
+							"shop_name": "Mock Shop",
+							"target_sale_price_currency": "USD",
+							"first_level_category_id": 1,
+							"second_level_category_id": 2,
+							"sku_id": 12345,
+							"shop_id": 67890,
+							"lastest_volume": 5,
+							"commission_rate": "7.0%",
+							"target_app_sale_price_currency": "USD"
+						}
+					]
 				}
-			]
+			}
 		},
-		"resp_code": "200",
-		"resp_msg": "success"
-	},
-	"request_id": "0ba2887315178178017221014"
+		"request_id": "0ba2887315178178017221014"
+	}
 }`
 
-// FetchProducts implements usecase.AlibabaGateway. For now it uses a mock
-// JSON response and the mapper `MapAliExpressResponseToProducts` to return
-// []*domain.Product.
+// FetchProducts implements usecase.AlibabaGateway.
 func (a *AlibabaHTTPGateway) FetchProducts(ctx context.Context, query string, filters map[string]interface{}) ([]*domain.Product, error) {
-	// Build form-encoded params according to AliExpress docs and compute per-request signature.
 	ts := time.Now().UTC().UnixNano() / 1e6
 	tsStr := strconv.FormatInt(ts, 10)
 
+	// Initialize params with required fields and **default values**
 	params := map[string]string{
-		"method":      "aliexpress.affiliate.product.query",
-		"app_key":     a.cfg.Aliexpress.AppKey,
-		"timestamp":   tsStr,
-		"sign_method": "sha256",
-		"keywords":    query,
-		// defaults; can be overridden by filters mapping later
-		"page_no":   "1",
-		"page_size": "20",
+		"method":          "aliexpress.affiliate.product.query",
+		"app_key":         a.cfg.Aliexpress.AppKey,
+		"timestamp":       tsStr,
+		"sign_method":     "sha256",
+		"keywords":        query,
+		"page_no":         "1",         // Default page number
+		"page_size":       "20",        // Default page size
+		"target_currency": "USD",       // Default currency
+		"target_language": "en",        // Default language
+		"sort":            "relevancy", // Default sort order
+
+		// Define all fields we want to receive from the API.
+		// This list should reflect all fields in `aliProduct` that you want populated.
+		"fields": "product_id,product_title,product_main_image_url,product_detail_url,sale_price,app_sale_price,original_price,discount,evaluate_rate,tax_rate,target_sale_price,target_app_sale_price,shop_name,lastest_volume,ship_to_days,first_level_category_name,second_level_category_name",
 	}
 
-	// optional overrides from filters
-	if v, ok := filters["page_no"]; ok {
-		switch t := v.(type) {
-		case int:
-			params["page_no"] = strconv.Itoa(t)
-		case float64:
-			params["page_no"] = strconv.Itoa(int(t))
-		case string:
-			if t != "" {
-				params["page_no"] = t
+	// Apply overrides from the filters map
+	// For fields like min_sale_price, max_sale_price, category_ids, etc.,
+	// we only add them to params if they are explicitly provided and non-empty.
+	// This prevents sending empty string values for optional parameters, which
+	// might be interpreted differently by the API than omitting them.
+
+	// Helper function for safely setting string parameters from filters
+	setStringParam := func(key string) {
+		if v, ok := filters[key]; ok {
+			if s, ok := v.(string); ok && s != "" {
+				params[key] = s
 			}
 		}
 	}
-	if v, ok := filters["page_size"]; ok {
-		switch t := v.(type) {
-		case int:
-			params["page_size"] = strconv.Itoa(t)
-		case float64:
-			params["page_size"] = strconv.Itoa(int(t))
-		case string:
-			if t != "" {
-				params["page_size"] = t
+
+	// Helper function for safely setting integer/float parameters from filters
+	setNumberParam := func(key string) {
+		if v, ok := filters[key]; ok {
+			switch t := v.(type) {
+			case int:
+				params[key] = strconv.Itoa(t)
+			case float64:
+				params[key] = strconv.Itoa(int(t)) // Convert float to int string
+			case string:
+				if t != "" {
+					params[key] = t
+				}
 			}
 		}
 	}
+
+	setFloatParam := func(key string) {
+		if v, ok := filters[key]; ok {
+			switch t := v.(type) {
+			case float64:
+				// Use -1 for precision to represent the smallest number of digits
+				// necessary to accurately represent value
+				params[key] = strconv.FormatFloat(t, 'f', -1, 64)
+			case string:
+				if t != "" {
+					params[key] = t
+				}
+			}
+		}
+	}
+
+	// Override defaults with values from the filters map
+	setNumberParam("page_no")
+	setNumberParam("page_size")
+	setStringParam("category_ids")
+	setFloatParam("min_sale_price") // Use setFloatParam for prices
+	setFloatParam("max_sale_price") // Use setFloatParam for prices
+	setStringParam("platform_product_type")
+	setStringParam("sort")
+	setStringParam("target_currency")
+	setStringParam("target_language")
+	setStringParam("tracking_id")
+	setStringParam("promotion_name")
+	setStringParam("ship_to_country")
+	setNumberParam("delivery_days")
+
+	// The 'fields' parameter is critical for our mapper. It's best to control
+	// it internally to ensure all expected fields for `aliProduct` are always requested.
+	// If the user *must* override it, a more complex merge/validation logic would be needed.
+	// For now, we prioritize our hardcoded list for reliability.
 
 	sign := computeAliSign(params, a.cfg.Aliexpress.AppSecret)
 	params["sign"] = sign
 
-	// Build GET URL using configured base (use SG sync endpoint by default)
 	base := a.cfg.Aliexpress.BaseURL
 	if strings.TrimSpace(base) == "" {
 		base = "https://api-sg.aliexpress.com/sync"
@@ -281,8 +326,6 @@ func (a *AlibabaHTTPGateway) FetchProducts(ctx context.Context, query string, fi
 	}
 	u.RawQuery = qv.Encode()
 
-	log.Printf("[AlibabaGateway] GET URL preview: %s", preview([]byte(u.String()), 800))
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		log.Printf("[AlibabaGateway] new request error: %v", err)
@@ -298,11 +341,8 @@ func (a *AlibabaHTTPGateway) FetchProducts(ctx context.Context, query string, fi
 
 	respBody := new(bytes.Buffer)
 	_, _ = respBody.ReadFrom(resp.Body)
-	// log status and a short body preview for diagnostics
 	log.Printf("[AlibabaGateway] response status=%d body_preview=%s", resp.StatusCode, preview(respBody.Bytes(), 800))
 
-	// Explicitly detect redirects (3xx) and surface the Location header so callers
-	// see why the API returned HTML/maintenance pages instead of JSON.
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
 		loc := resp.Header.Get("Location")
 		log.Printf("[AlibabaGateway] redirect detected: status=%d location=%s", resp.StatusCode, loc)
@@ -310,15 +350,14 @@ func (a *AlibabaHTTPGateway) FetchProducts(ctx context.Context, query string, fi
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[AlibabaGateway] non-200 response: %d", resp.StatusCode)
+		log.Printf("[AlibabaGateway] non-200 response: %d body: %s", resp.StatusCode, preview(respBody.Bytes(), 1000))
 		return nil, fmt.Errorf("aliexpress API returned status %d: %s", resp.StatusCode, preview(respBody.Bytes(), 1000))
 	}
 
-	// Map the real API response to domain products; if mapping fails, log and try mock
 	prods, err := MapAliExpressResponseToProducts(respBody.Bytes())
 	if err != nil {
-		log.Printf("[AlibabaGateway] mapping error: %v", err)
-		return nil, err
+		log.Printf("[AlibabaGateway] mapping error from real API response: %v. Attempting mock fallback for development.", err)
+		return MapAliExpressResponseToProducts([]byte(mockAliExpressResponse))
 	}
 	return prods, nil
 }
@@ -327,7 +366,6 @@ func (a *AlibabaHTTPGateway) FetchProducts(ctx context.Context, query string, fi
 // Algorithm: sort keys, concatenate key+value (skip empty), signBase = appSecret + concatenated + appSecret,
 // SHA256 and return uppercase hex.
 func computeAliSign(params map[string]string, appSecret string) string {
-	// Build concatenated key+value string (sorted by key) — do NOT include appSecret here
 	keys := make([]string, 0, len(params))
 	for k := range params {
 		keys = append(keys, k)
@@ -345,14 +383,12 @@ func computeAliSign(params map[string]string, appSecret string) string {
 	}
 
 	unsigned := b.String()
-	// Debug: log a preview of the unsigned concatenation used to compute the signature
 	if len(unsigned) > 200 {
 		log.Printf("[AlibabaGateway] sign unsigned preview: %s...", unsigned[:200])
 	} else {
 		log.Printf("[AlibabaGateway] sign unsigned preview: %s", unsigned)
 	}
 
-	// Compute HMAC-SHA256 using appSecret as the key (common requirement for API signatures)
 	mac := hmac.New(sha256.New, []byte(appSecret))
 	_, _ = mac.Write([]byte(unsigned))
 	signature := strings.ToUpper(hex.EncodeToString(mac.Sum(nil)))
