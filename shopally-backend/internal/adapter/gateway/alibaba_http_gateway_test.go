@@ -12,8 +12,7 @@ const mockAliExpressResponseValid = `{
         "resp_result": {
             "result": {
                 "current_record_count": 1,
-                "total_record_count": 1					SellerName:         strings.TrimSpace(p.ShopName),
-,
+                "total_record_count": 1,
                 "current_page_no": 1,
                 "products": {
                     "product": [
