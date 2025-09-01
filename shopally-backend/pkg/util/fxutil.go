@@ -1,11 +1,11 @@
 package util
 
 import (
-    "context"
-    "errors"
-    "strconv"
+	"context"
+	"errors"
+	"strconv"
 
-    "github.com/shopally-ai/pkg/domain"
+	"github.com/shopally-ai/pkg/domain"
 )
 
 // FXKeyUSDToETB is the canonical cache key used to store the USD->ETB rate.
@@ -19,20 +19,19 @@ const FXKeyUSDToETB = "fx:USD:ETB"
 // - Returns (convertedETB, rateUsed, error).
 // - If the key is missing or unparsable, returns an error.
 func USDToETB(ctx context.Context, usd float64, cache domain.ICachePort) (float64, float64, error) {
-    if cache == nil {
-        return 0, 0, errors.New("cache is nil")
-    }
-    val, ok, err := cache.Get(ctx, FXKeyUSDToETB)
-    if err != nil {
-        return 0, 0, err
-    }
-    if !ok {
-        return 0, 0, errors.New("usd->etb rate not found in cache")
-    }
-    rate, perr := strconv.ParseFloat(val, 64)
-    if perr != nil {
-        return 0, 0, perr
-    }
-    return usd * rate, rate, nil
+	if cache == nil {
+		return 0, 0, errors.New("cache is nil")
+	}
+	val, ok, err := cache.Get(ctx, FXKeyUSDToETB)
+	if err != nil {
+		return 0, 0, err
+	}
+	if !ok {
+		return 0, 0, errors.New("usd->etb rate not found in cache")
+	}
+	rate, perr := strconv.ParseFloat(val, 64)
+	if perr != nil {
+		return 0, 0, perr
+	}
+	return usd * rate, rate, nil
 }
- 
