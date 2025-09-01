@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/shopally-ai/cmd/api/middleware"
@@ -67,14 +66,7 @@ func main() {
 	}
 
 	// Choose LLM implementation
-	var lg domain.LLMGateway
-	if os.Getenv("GEMINI_API_KEY") != "" {
-		lg = gateway.NewGeminiLLMGateway("", fxClient)
-		log.Println("LLM: using Gemini gateway")
-	} else {
-		lg = gateway.NewMockLLMGateway()
-		log.Println("LLM: using Mock gateway (no GEMINI_API_KEY)")
-	}
+	lg := gateway.NewGeminiLLMGateway(cfg.Gemini.APIKey, fxClient)
 
 	// Alibaba gateway: use HTTP gateway (real) and pass configuration
 	// If you want to force the mock gateway for local development, replace
