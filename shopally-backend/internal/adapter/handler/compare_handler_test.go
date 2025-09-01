@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/shopally-ai/internal/contextkeys"
 	"github.com/shopally-ai/pkg/domain"
 	"github.com/shopally-ai/pkg/usecase"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/shopally-ai/internal/contextkeys"
 )
 
 func TestCompareProducts(t *testing.T) {
