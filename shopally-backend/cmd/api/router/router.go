@@ -18,10 +18,6 @@ func SetupRouter(cfg *config.Config, limiter *middleware.RateLimiter, searchHand
 	// Health checker
 	version1.GET("/health", handler.Health)
 
-	//public
-	version1.GET("/search", searchHandler.Search)
-	version1.POST("/compare", compareHandler.CompareProducts)
-
 	// private
 	limitedRouter := version1.Group("")
 	limitedRouter.Use(limiter.Middleware())

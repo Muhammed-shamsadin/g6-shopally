@@ -86,6 +86,7 @@ func main() {
 	alertsColl := db.Collection(collName)
 	alertRepo := repo.NewMongoAlertRepository(alertsColl)
 	alertMgr := usecase.NewAlertManager(alertRepo)
+
 	alertHandler := handler.NewAlertHandler(alertMgr)
 	compareHandler := handler.NewCompareHandler(usecase.NewCompareProductsUseCase(lg))
 

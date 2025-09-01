@@ -517,7 +517,6 @@ OUTPUT:`, userPrompt, lang, lang, getProductJSONString(p), strings.ToUpper(lang)
 	enhancedProduct.Price = p.Price
 	enhancedProduct.ProductRating = p.ProductRating
 	enhancedProduct.SellerScore = p.SellerScore
-	enhancedProduct.SellerName = p.SellerName
 	enhancedProduct.DeliveryEstimate = p.DeliveryEstimate
 	enhancedProduct.NumberSold = p.NumberSold
 	enhancedProduct.DeeplinkURL = p.DeeplinkURL
@@ -537,7 +536,6 @@ func getProductJSONString(p *domain.Product) string {
 		"price":              p.Price,
 		"productRating":      p.ProductRating,
 		"sellerScore":        p.SellerScore,
-		"sellerName":         p.SellerName,
 		"deliveryEstimate":   p.DeliveryEstimate,
 		"description":        p.Description,
 		"customerHighlights": p.CustomerHighlights,
@@ -563,7 +561,6 @@ func (g *GeminiLLMGateway) createBasicEnhancedProduct(p *domain.Product, userPro
 		Price:              p.Price,
 		ProductRating:      p.ProductRating,
 		SellerScore:        p.SellerScore,
-		SellerName:         p.SellerName,
 		DeliveryEstimate:   p.DeliveryEstimate,
 		Description:        enhanceDescription(p.Description, lang),
 		CustomerHighlights: enhanceHighlights(p.CustomerHighlights, lang),
