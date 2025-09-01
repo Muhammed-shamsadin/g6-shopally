@@ -73,13 +73,13 @@ func main() {
 		lg = gateway.NewGeminiLLMGateway("", fxClient)
 		log.Println("LLM: using Gemini gateway")
 	} else {
-		lg = gateway.NewMockLLMGateway()
-		log.Println("LLM: using Mock gateway (no GEMINI_API_KEY)")
+		log.Fatal("GEMINI_API_KEY environment variable is required")
 	}
 	searchHandler := handler.NewSearchHandler(usecase.NewSearchProductsUseCase(ag, lg, nil))
+	compareHandler := handler.NewCompareHandler(usecase.NewCompareProductsUseCase(lg))
 
 	// Initialize router
-	router := router.SetupRouter(cfg, limiter, searchHandler)
+	router := router.SetupRouter(cfg, limiter, searchHandler, compareHandler)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)

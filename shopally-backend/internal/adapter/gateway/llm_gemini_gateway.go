@@ -28,7 +28,49 @@ type GeminiLLMGateway struct {
 
 // CompareProducts implements domain.LLMGateway.
 func (g *GeminiLLMGateway) CompareProducts(ctx context.Context, productDetails []*domain.Product) (map[string]interface{}, error) {
-	panic("unimplemented")
+    if len(productDetails) == 0 {
+        return nil, fmt.Errorf("at least one product is required")
+    }
+
+    // Build compact JSON payload for LLM
+    req := struct {
+        Products []*domain.Product `json:"products"`
+    }{Products: productDetails}
+
+    b, err := json.Marshal(req)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal products: %w", err)
+    }
+
+    // Language hint
+    lang := "en"
+    if v := ctx.Value(contextkeys.RespLang); v != nil {
+        if s, ok := v.(string); ok && s != "" {
+            lang = s
+        }
+    }
+
+    prompt := "You are an assistant that compares e-commerce products. Return STRICT JSON only, no prose, with this shape: {\n  \"comparison\": [ { \"product\": <original product>, \"synthesis\": { \"pros\": [..], \"cons\": [..], \"isBestValue\": <bool>, \"features\": { <k>: <v> } } } ]\n}."
+    if lang == "am" {
+        prompt += " Respond in Amharic (am)."
+    } else {
+        prompt += " Respond in English (en)."
+    }
+    prompt += "\nProducts JSON: " + string(b)
+
+    // Call LLM
+    text, err := g.call(ctx, prompt)
+    if err != nil {
+        return nil, fmt.Errorf("LLM API call failed: %w", err)
+    }
+
+    clean := extractJSON(text)
+    var out map[string]interface{}
+    if err := json.Unmarshal([]byte(clean), &out); err != nil {
+        return nil, fmt.Errorf("failed to parse LLM response: %w", err)
+    }
+
+    return out, nil
 }
 
 // NewGeminiLLMGateway creates a new gateway using the GEMINI_API_KEY from env if apiKey is empty.
