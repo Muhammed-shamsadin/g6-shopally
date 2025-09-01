@@ -3,8 +3,8 @@ package gateway
 import (
 	"context"
 
-	"github.com/shopally-ai/pkg/domain"
 	"github.com/shopally-ai/internal/contextkeys"
+	"github.com/shopally-ai/pkg/domain"
 )
 
 // MockLLMGateway implements domain.LLMGateway and returns a hardcoded parsed intent.
@@ -42,7 +42,7 @@ func (m *MockLLMGateway) CompareProducts(ctx context.Context, productDetails []*
 		}
 
 		comparisons = append(comparisons, map[string]interface{}{
-			"product":   p,
+			"product": p,
 			"synthesis": map[string]interface{}{
 				"pros":        pros,
 				"cons":        cons,
