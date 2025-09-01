@@ -10,8 +10,10 @@ import (
 	"github.com/shopally-ai/cmd/api/router"
 	"github.com/shopally-ai/internal/adapter/gateway"
 	"github.com/shopally-ai/internal/adapter/handler"
+	repo "github.com/shopally-ai/internal/adapter/repository"
 	"github.com/shopally-ai/internal/config"
 	"github.com/shopally-ai/internal/platform"
+	"github.com/shopally-ai/pkg/domain"
 	"github.com/shopally-ai/pkg/usecase"
 )
 
@@ -55,18 +57,41 @@ func main() {
 		time.Duration(cfg.RateLimit.Window)*time.Second,
 	)
 
-	// Initialize router
-	router := router.SetupRouter(cfg, limiter)
+	// FX client (provider defaults to exchangerate.host if not configured)
+	fxInner := gateway.NewFXHTTPGateway("", "", nil)
+	var fxClient domain.IFXClient = fxInner
+	// Wrap with Redis cache if available
+	if rdb != nil {
+		redisCache := gateway.NewRedisCache(rdb.Client, "sa:")
+		fxClient = gateway.NewCachedFXClient(fxInner, redisCache, 12*time.Hour)
+	}
 
-	// Construct mock gateways and use case for mocked search flow
-	ag := gateway.NewAlibabaHTTPGateway()
-	// ag := gateway.NewMockAlibabaGateway()
-	lg := gateway.NewMockLLMGateway()
+	// Choose LLM implementation
+	lg := gateway.NewGeminiLLMGateway(cfg.Gemini.APIKey, fxClient)
+
+	// Alibaba gateway: use HTTP gateway (real) and pass configuration
+	// If you want to force the mock gateway for local development, replace
+	// the following line with: ag := gateway.NewMockAlibabaGateway()
+	ag := gateway.NewAlibabaHTTPGateway(cfg)
+
+	// Construct usecase and handler for search
 	uc := usecase.NewSearchProductsUseCase(ag, lg, nil)
+	searchHandler := handler.NewSearchHandler(uc)
 
-	// Initialize handlers (inject usecase so the router can register the
-	// handler function without receiving a handler instance).
-	handler.InjectSearchUseCase(uc)
+	// Alerts: set up Mongo repository and handler
+	collName := cfg.Mongo.AlertCollection
+	if collName == "" {
+		collName = "alerts"
+	}
+	alertsColl := db.Collection(collName)
+	alertRepo := repo.NewMongoAlertRepository(alertsColl)
+	alertMgr := usecase.NewAlertManager(alertRepo)
+
+	alertHandler := handler.NewAlertHandler(alertMgr)
+	compareHandler := handler.NewCompareHandler(usecase.NewCompareProductsUseCase(lg))
+
+	// Initialize router
+	router := router.SetupRouter(cfg, limiter, searchHandler, compareHandler, alertHandler)
 
 	// Start the server
 	log.Println("Starting server on port", cfg.Server.Port)

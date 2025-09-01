@@ -48,6 +48,17 @@ type Config struct {
 		Limit  int `mapstructure:"limit"`
 		Window int `mapstructure:"window"`
 	} `mapstructure:"rate-limit"`
+
+	Aliexpress struct {
+		AppCategory string `mapstructure:"app_category"`
+		AppKey      string `mapstructure:"app_key"`
+		AppSecret   string `mapstructure:"app_secret"`
+		BaseURL     string `mapstructure:"base_url"`
+	} `mapstructure:"aliexpress"`
+
+	Gemini struct {
+		APIKey string `mapstructure:"api_key"`
+	} `mapstructure:"gemini"`
 }
 
 func LoadConfig(path string) (*Config, error) {
