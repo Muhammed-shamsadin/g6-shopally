@@ -51,7 +51,7 @@ Here are some UI examples of the platform (replace the paths with your actual sc
 - **Caching & Rate Limiting:** Redis  
 - **Auth:** Google OAuth  
 - **CI/CD:** GitHub Actions, Docker  
-- **AI Integration (Planned):** Query parsing for smarter search  
+- **AI Integration:** Query parsing for smarter search  
 - **Languages:** English + Amharic  
 
 ---
@@ -113,9 +113,3 @@ flutter run
 Web: http://localhost:3000
 
 Mobile: Running emulator or connected device
-
-
-This is fully **copyable** and ready to paste into your `README.md`.  
-
-If you want, I can also **add a “Project Overview” and “Technologies Used” section** so your README looks professional and complete. Do you want me to do that?
-
