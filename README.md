@@ -1,72 +1,58 @@
-# ShopAlly
+# ShopAlly – AI-Powered Shopping Assistant for AliExpress  
+Helping customers find the right products faster with **AI search, multilingual support, and smart notifications**.  
 
-ShopAlly is a multi-platform shopping assistant application, featuring a backend (Go), web frontend (Next.js), and mobile app (Flutter). It helps users compare products, manage alerts, and streamline their shopping experience.
+---
 
-## Project Structure
+## 🚀 Overview  
+ShopAlly is an **AI-powered shopping platform** that assists AliExpress customers in making faster and smarter purchase decisions.  
+It reduces the time spent searching for products by combining:  
 
-- **shopally-backend/**: Go backend API, business logic, and integrations.
-- **shopally-web/**: Next.js web frontend for user interaction.
-- **shopallymobile/**: Flutter mobile app for Android/iOS.
-- **LICENSE**: Project license.
-- **README.md**: Project documentation.
+- **AI-powered product search**  
+- **Multilingual support (English & Amharic)**  
+- **Redis rate-limiting** for secure API usage  
+- **Price-drop notifications** to alert customers when items go on sale  
+- **CI/CD pipelines** to ensure reliable deployments  
 
-## Getting Started
+---
 
-### Backend (Go)
+## 👨‍💻 My Contributions  
+This fork highlights the parts of ShopAlly I personally worked on:  
 
-1. Navigate to `shopally-backend/`.
-2. Install dependencies:
-	```sh
-	go mod tidy
-	```
-3. Run the API server:
-	```sh
-	go run cmd/api/main.go
-	```
-4. For worker services:
-	```sh
-	go run worker/main.go
-	```
+- **Search Endpoint (/search)**  
+  - Implemented the **bridge between ShopAlly and the AliExpress API**.  
+  - Fetched product data from AliExpress and **remapped fields** into ShopAlly’s custom structure for later AI processing.  
 
-### Web (Next.js)
+- **Code Quality & Reviews**  
+  - Reviewed team PRs to ensure code quality and smooth merges.  
 
-1. Navigate to `shopally-web/`.
-2. Install dependencies:
-	```sh
-	npm install
-	```
-3. Start the development server:
-	```sh
-	npm run dev
-	```
+- **CI/CD**  
+  - Fixed **GitHub Actions CI issues**, ensuring builds and tests ran successfully.  
 
-### Mobile (Flutter)
+---
 
-1. Navigate to `shopallymobile/`.
-2. Install dependencies:
-	```sh
-	flutter pub get
-	```
-3. Run the app:
-	```sh
-	flutter run
-	```
+## 🛠 Tech Stack  
+- **Backend:** Go (Gin), Clean Architecture  
+- **Database:** MongoDB  
+- **Caching & Rate Limiting:** Redis  
+- **Auth:** Google OAuth  
+- **CI/CD:** GitHub Actions, Docker  
+- **AI Integration (Planned):** Query parsing for smarter search  
+- **Languages:** English + Amharic  
 
-## Features
+---
 
-- Product comparison
-- Alert management
-- Push notifications
-- Multi-platform support (Web, Android, iOS)
+## 📂 Proof of Contribution  
+This is a **forked repository** to highlight my backend contributions.  
 
-## Contributing
+- 🔗 [Original Team Repository](https://github.com/A2SV/g6-shopally)  
+- 👥 [Contributors Page (Proof)](https://github.com/A2SV/g6-shopally/graphs/contributors)  
+- Example Commit: *(insert your commit link here once identified)*  
 
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/YourFeature`).
-3. Commit your changes.
-4. Push to the branch.
-5. Open a pull request.
+---
 
-## License
+## ⚙️ Setup & Installation  
 
-This project is licensed under the terms of the LICENSE file.
+### 1. Clone the repository  
+```bash
+git clone https://github.com/YOUR_USERNAME/shopally.git
+cd shopally
